@@ -1,3 +1,4 @@
+import os
 import requests
 import pandas as pd
 from tqdm import tqdm
@@ -245,7 +246,7 @@ class WebQueryClient(object):
         return df
         
         
-    def get_n_save_data(self, district_codes):
+    def get_n_save_data(self, district_codes, save_dir=os.path.join(os.path.expanduser("~"), "Downloads", "LandScout")):
         for i, code in enumerate(district_codes):
             
             code_name = get_district_name(code)
@@ -270,5 +271,8 @@ class WebQueryClient(object):
             # post processing
             df = self.post_processing(df)
             
-            df.to_csv(f'{code_name}.csv', index=False, encoding="utf-8-sig")
+            if not os.path.isdir(save_dir):
+                os.makedirs(save_dir)
+                
+            df.to_csv(os.path.join(save_dir, f'{code_name}.csv'), index=False, encoding="utf-8-sig")
             print(f"[I] {code_name} 저장 완료.")
