@@ -1,5 +1,6 @@
 from utils import get_district_code
-from config import params, param_name
+from config_base import param_name
+from config_user import params
 def check_district_code():
     # if user provides the name of interested district,
     if len(params["cortarName"]) > 0 :
@@ -32,7 +33,7 @@ def check_district_code():
     print("")
     return True, district_codes
         
-from config import decode_key
+from config_base import decode_key
 from query import WebQueryClient
 from url_info import basic_url, detail_url
 if __name__ == "__main__":
