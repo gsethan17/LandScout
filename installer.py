@@ -7,6 +7,8 @@ if __name__ == "__main__":
     
     necessary_files = [
         "statutory_administrative_district_code.txt",
+        "config_user.txt",
+        "application_key.txt",
     ]
     
     build_exe(path_, necessary_files=necessary_files)
