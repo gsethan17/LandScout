@@ -63,9 +63,60 @@ def build_exe(file_path, necessary_files=[]):
         to_file = os.path.join(dir_, "dist", "LandScout", file_)
         shutil.copyfile(from_file, to_file)
     
+from config_base import param_name
+def get_txt_config(path):
+    config = {}
+    key = None
+    
+    with open(path, 'r') as file:
+        for line in file:
+            line = line.strip() # remove blank
+            
+            # ignore commend or black line
+            if line.startswith("#") or not line:
+                continue
+            
+            if line.startswith(">"):
+                key = line.split(">")[-1].strip()
+                config[key] = []
+            else:
+                value = line.strip()
+                # convert hangul value to key code
+                for param_k, param_v in param_name.items():
+                    if param_v == value:
+                        value = param_k
+                        
+                config[key].append(value)
+                
+    return config
+
+def get_application_key():
+    app_key = {}
+    with open(os.path.join(os.path.dirname(__file__), "application_key.txt")) as file:
+        for line in file:
+            line = line.strip() # remove blank
+            
+            # ignore commend or black line
+            if line.startswith("#") or not line:
+                continue
+            
+            key, value = line.split("=", 1)
+            if not value:
+                raise ValueError("[E] application_key.txt 파일에 client_id 및 client_secret을 확인하세요.")
+            
+            app_key[key.strip()] = value.strip()
+    
+    return app_key
+    
     
 if __name__ == "__main__":
-    code = '2920000000'
-    name = get_district_name(code=code)
-    print(name)
+    app_key = get_application_key()
+    print(app_key)
+    
+    # params = get_txt_config(os.path.join(os.path.dirname(__file__), 'config_user.txt'))
+    # print(params)
+    
+    # code = '2920000000'
+    # name = get_district_name(code=code)
+    # print(name)
     

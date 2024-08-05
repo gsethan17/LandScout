@@ -28,6 +28,7 @@ decode_key = {
         "atclFetrDesc":"설명",
         # "tagList":"키워드",
         "rltrNm":"부동산",
+        "atclNo":"매물번호",
     },
     
     "detail":{
