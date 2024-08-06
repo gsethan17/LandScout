@@ -1,10 +1,17 @@
+altgraph==0.17.4
 certifi==2024.7.4
 charset-normalizer==3.3.2
+colorama==0.4.6
 idna==3.7
 numpy==2.0.1
+packaging==24.1
 pandas==2.2.2
+pefile==2023.2.7
+pyinstaller==6.9.0
+pyinstaller-hooks-contrib==2024.7
 python-dateutil==2.9.0.post0
 pytz==2024.1
+pywin32-ctypes==0.2.2
 requests==2.32.3
 six==1.16.0
 tqdm==4.66.4

@@ -7,7 +7,6 @@ from utils import get_district_name
 from utils import get_application_key
 
 from url_info import reverse_gc_url, driving_url
-from application_key import client_id, client_secret
 
 class WebQueryClient(object):
     def __init__(self, base_url, detail_url, query_params, decode_key, **kwargs):
@@ -223,9 +222,11 @@ class WebQueryClient(object):
                 request_time = data_dic['currentDateTime']
                 eta_ms = data_dic['route'][params['option']][0]['summary']['duration']
                 eta_m = (eta_ms // 1000) // 60
+            else:
+                raise ConnectionError(f"[E] Failed to retrieve ETA data: {response.status_code}, {response.text}")
                 
         else:
-            print(f"Failed to retrieve data: {response.status_code}, {response.text}")
+            raise ConnectionError(f"[E] Failed to retrieve ETA data: {response.status_code}, {response.text}")
                 
         return eta_m, request_time
         

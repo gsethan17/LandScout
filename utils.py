@@ -1,6 +1,6 @@
 import pandas as pd
 def get_district_code(name=None):
-    df = pd.read_csv('statutory_administrative_district_code.txt', sep='\t')
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'config', 'statutory_administrative_district_code.txt'), sep='\t')
 
     level_ = {}
     for l in range(1, 6, 1):
@@ -23,7 +23,7 @@ def get_district_code(name=None):
     return code
 
 def get_district_name(code):
-    df = pd.read_csv('statutory_administrative_district_code.txt', sep='\t')
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'config', 'statutory_administrative_district_code.txt'), sep='\t')
     exist = sorted(df[df.columns[2]].unique())[0]
     name_no_spaces = ''
     
@@ -34,9 +34,46 @@ def get_district_name(code):
     
     return name_no_spaces[:-1]
 
+from config_base import param_name
+def check_district_code(params):
+    # if user provides the name of interested district,
+    if len(params["cortarName"]) > 0 :
+        district_names = params["cortarName"]
+        district_codes = []
+        for name in district_names:
+            code = get_district_code(name)
+            if code == None:
+                raise NameError("[E] 행정구역 이름 또는 띄어쓰기를 확인하세요.: {}".format(name))
+            district_codes.append(str(code))
+    # otherwise, the search will cover the entire country,
+    else:
+        raise ValueError("[E] config_user.txt 파일 내 탐색 지역을 1개 이상 작성하세요.")
+        
+    print("")
+    print("[I] 아래 조건으로 탐색합니다.")
+    print("[I] 탐색 구역: ")
+    for name in district_names:
+        print("\t- {}".format(name))
+    for k, v in params.items():
+        if k == "cortarName":
+            continue
+        try:
+            print("[I] {}:".format(param_name[k]))
+            for sub_ in v:
+                try:
+                    print("\t- {}".format(param_name[sub_]))
+                except:
+                    print("\t- {}".format(sub_))
+        except:
+            if v[0] == 'True':
+                print("[I] 추가 기능 : {}".format(k))
+    print("")
+    return True, district_codes
+        
+
 import os
 import shutil
-def build_exe(file_path, necessary_files=[]):
+def build_exe(file_path):
     
     # check previous log
     dir_ = os.path.dirname(file_path)
@@ -55,20 +92,18 @@ def build_exe(file_path, necessary_files=[]):
     if is_spec:
         os.remove(spec_path)
         
-        
     os.system(f"pyinstaller {file_path} -n LandScout")
     
-    for file_ in necessary_files:
-        from_file = os.path.join(os.path.dirname(file_path), file_)
-        to_file = os.path.join(dir_, "dist", "LandScout", file_)
-        shutil.copyfile(from_file, to_file)
+    from_dir = os.path.join(os.path.dirname(file_path), "config")
+    to_dir = os.path.join(dir_, "dist", "LandScout", "_internal", "config")
+    shutil.copytree(from_dir, to_dir)
     
 from config_base import param_name
 def get_txt_config(path):
     config = {}
     key = None
     
-    with open(path, 'r') as file:
+    with open(path, 'r', encoding='UTF8') as file:
         for line in file:
             line = line.strip() # remove blank
             
@@ -92,7 +127,7 @@ def get_txt_config(path):
 
 def get_application_key():
     app_key = {}
-    with open(os.path.join(os.path.dirname(__file__), "application_key.txt")) as file:
+    with open(os.path.join(os.path.dirname(__file__), "config", "application_key.txt"), encoding='UTF8') as file:
         for line in file:
             line = line.strip() # remove blank
             
@@ -107,6 +142,13 @@ def get_application_key():
             app_key[key.strip()] = value.strip()
     
     return app_key
+
+import time
+def terminate():
+    print("Terminate in 10seconds...")
+    for i in range(10, 0, -1):
+        print(f"{i}, ", end='')
+        time.sleep(1)
     
     
 if __name__ == "__main__":
