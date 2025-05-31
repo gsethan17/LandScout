@@ -7,9 +7,19 @@ from utils import get_district_name
 from utils import get_application_key
 
 from url_info import reverse_gc_url, driving_url
+    
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 class WebQueryClient(object):
-    def __init__(self, base_url, detail_url, query_params, decode_key, **kwargs):
+    def __init__(self, 
+                base_url:str="", 
+                detail_url:str="", 
+                query_params:dict={}, 
+                decode_key:dict={}, 
+                verbose:int=0, 
+                **kwargs
+                ):
         self.url = base_url
         self.detail_url = detail_url
         self.decode_key = decode_key
@@ -27,16 +37,40 @@ class WebQueryClient(object):
             else:
                 self.query_params[str(k)] = str(v[0])
                 
+        self.basic_param_key = [ 
+            'realEstateType',
+            'tradeType',
+            'cortarName',
+            'PriceMin',
+            'PriceMax',
+            'areaMin',
+            'areaMax',
+            ]
+                
+        self.verbose = verbose
+                
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-            }
+            'accept': '*/*',
+            'accept-language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IlJFQUxFU1RBVEUiLCJpYXQiOjE3NDg2OTk5ODgsImV4cCI6MTc0ODcxMDc4OH0.M4fq7xuiqtR7HPGLhSgMABDVyXveDYJvezKnlBmQfwc',
+            'priority': 'u=1, i',
+            'referer': 'https://new.land.naver.com/offices?ms=37.3843058,127.2867088,15&a=TJ&e=RETAIL',
+            'sec-ch-ua': '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+            # 'cookie': 'nhn.realestate.article.ipaddress_city=1100000000; NAC=7d6sBoAZJBfrB; NACT=1; _fwb=85YUStmxwtN5ssGduSQIUR.1748699444357; landHomeFlashUseYn=Y; NNB=UUMDIURQBE5WQ; SRT30=1748699440; nhn.realestate.article.trade_type_cd=A1; realestate.beta.lastclick.cortar=4100000000; _fwb=85YUStmxwtN5ssGduSQIUR.1748699444357; _ga=GA1.1.1027182781.1748699461; _ga_451MFZ9CFM=GS2.1.s1748699461$o1$g0$t1748699462$j59$l0$h0; SHOW_FIN_BADGE=Y; BNB_FINANCE_HOME_TOOLTIP_ESTATE=true; nhn.realestate.article.rlet_type_cd=Z04; REALESTATE=Sat%20May%2031%202025%2022%3A59%3A48%20GMT%2B0900%20(Korean%20Standard%20Time); SRT5=1748700431; BUC=GyJMIt_y4lzbPeOPi0sIOfq1G5Y3mvf55uIua0AnsJg=',
+        }
         
         # preprocessing function
         self.kwargs = kwargs
         self.add_get_address = self.kwargs.get('address', False)
         self.add_get_ETA = self.kwargs.get('ETA', False)
-        self.add_map_link = self.kwargs.get('map_link', False)
-        self.add_rlet_link = self.kwargs.get('rlet_link', False)
+        self.add_get_map_link = self.kwargs.get('map_link', False)
+        self.add_get_rlet_link = self.kwargs.get('rlet_link', False)
         
         if (self.add_get_address or 
             self.add_get_ETA or
@@ -47,32 +81,49 @@ class WebQueryClient(object):
                 'X-NCP-APIGW-API-KEY-ID': application_key['client_id'],
                 'X-NCP-APIGW-API-KEY': application_key['client_secret'],
             }
+            
+    def print(self, level:int, info:str):
+        if self.verbose >= level:
+            print(info)
         
     def get_basic_data(self, district_code):
+        self.print(2, f"[I] Start with getting basic data.")
         total_data = []
-        params = deepcopy(self.query_params)
+        self.print(2, f"[I] Define total_data: {total_data}.")
+        
+        params = {}
+        for key, value in self.query_params.items():
+            if key in self.basic_param_key:
+                params[key] = value
+                
+        self.print(2, f"[I] Copy query_params: {params}.")
         
         params['cortarNo'] = district_code
         params['page'] = 1
+        self.print(2, f"[I] Add cortarNo & page at params: {params}.")
         continue_ = True
         
-        
         while continue_:
+            self.print(2, f"[I] Start with request information from {self.url}.")
             response = requests.get(
                 url=self.url, 
                 params=params, 
                 headers=self.headers,
                 )
+            self.print(2, f"[I] Request URL: {response.url}.")
+            self.print(2, f"[I] Response: {response}.")
             
             # check response status
             if response.status_code == 200:
                 data_dic = response.json()
+                self.print(2, f"[I] Number of Received data: {len(data_dic['articleList'])}.")
+                
+                total_data += data_dic['articleList']
                 
                 # check there is more data
-                if not data_dic['more']:
+                if not data_dic['isMoreData']:
+                    self.print(2, f"[I] There is no more basic data.")
                     break
-                
-                total_data += data_dic['body']
                 
                 params['page'] += 1
                 
@@ -83,27 +134,26 @@ class WebQueryClient(object):
         return total_data
     
     def get_detail_data(self, basic_data):
+        self.print(2, f"[I] Start with getting detail data.")
         total_detail_data = []
+        self.print(2, f"[I] Define total_detail_data: {total_detail_data}.")
         
-        for data in basic_data:
-            params = {
-                "articleId":data["atclNo"],
-                "realEstateType":data["rletTpCd"],
-                "tradeType":data["tradTpCd"],
-            }
+        for i, data in enumerate(basic_data):
+            self.print(2, f"[I] Define url by article number. [{i+1}/{len(basic_data)}]")
+            url=f"{self.detail_url}/{data['articleNo']}"
             
+            self.print(2, f"[I] Start with request information from {url}.")
             response = requests.get(
-                url=self.detail_url, 
-                params=params, 
+                url=url,
                 headers=self.headers,
                 )
+            self.print(2, f"[I] Request URL: {response.url}.")
             
             # check response status
             if response.status_code == 200:
+                self.print(2, f"[I] Response: {response}.")
                 data_dic = response.json()
-                # check there is more data
-                if not data_dic['isSuccess']:
-                    break
+                
                 total_detail_data.append(data_dic)
                 
         return total_detail_data
@@ -121,20 +171,26 @@ class WebQueryClient(object):
         return values_with_keys
             
     def decode_to_dataframe(self, basic_data, detail_data):
+        self.print(2, f"[I] Start with decoding to dataframe.")
         basic_columns = self.decode_key["basic"].values()
+        
         detail_keys, detail_columns = zip(*self.find_all_values_with_keys(self.decode_key["detail"]))
         columns = list(basic_columns) + list(detail_columns)
         
         decode_dict = {key:[] for key in columns}
         
         for i, basic_ in enumerate(basic_data):
-            # print(basic_)
+            self.print(2, f"[I] Decode data [{i+1}/{len(basic_data)}]")
             values = [basic_[k] if k in basic_.keys() else None for k in self.decode_key["basic"].keys()]
             
             for keys in detail_keys:
                 value = deepcopy(detail_data[i])
                 for key in keys:
-                    value = value[key]
+                    try:
+                        value = value[key]
+                    except:
+                        value = '-'
+                        
                 values += [value]
             
             for i, col in enumerate(columns):
@@ -145,14 +201,18 @@ class WebQueryClient(object):
         return df
     
     def request_address(self, lat, lng):
+        self.print(2, f"[I] Start with getting address. [lat:{lat}, lon:{lng}]")
         add = ''
         orders = "addr"     # 지번
         url = f"{reverse_gc_url}?coords={lng},{lat}&output=json&orders={orders}"
         
+        self.print(2, f"[I] Start with request information from {url}.")
         response = requests.get(
                     url,
                     headers=self.headers_post,
                     )
+        self.print(2, f"[I] Response: {response}.")
+        
         
         # 응답 상태 코드 확인
         if response.status_code == 200:
@@ -193,7 +253,7 @@ class WebQueryClient(object):
             lng = str(row['경도'])
             
             add = self.request_address(lat, lng)
-            
+            print(add)
             df.iloc[i, df.columns.get_loc("주소")] = add
         
         return df
@@ -272,16 +332,15 @@ class WebQueryClient(object):
         return df
 
     def get_rlet_link(self, df):
-        rlet_url = "https://fin.land.naver.com/articles/"
+        rlet_url = "https://fin.land.naver.com/articles"
         df["네이버부동산"] = ''
         
         print(f"[I] 네이버부동산 링크 생성 중...")
         for i in tqdm(range(len(df))):
             
             row = df.iloc[i]
-            no_atcl = str(row['매물번호'])
             
-            url = rlet_url + no_atcl
+            url = f"{rlet_url}/{row['매물번호']}"
             
             df.iloc[i, df.columns.get_loc("네이버부동산")] = f'=HYPERLINK("{url}", "링크")'
         
@@ -292,22 +351,60 @@ class WebQueryClient(object):
             df = self.get_ETA(df)
         if self.add_get_address:
             df = self.get_address(df)
-        if self.add_map_link:
+        if self.add_get_map_link:
             if not self.add_get_address:
                 raise KeyError("[E] 링크를 추가하려면 주소 기능을 활성화하세요.")
             df = self.get_map_link(df)
-        if self.add_rlet_link:
+        if self.add_get_rlet_link:
             df = self.get_rlet_link(df)
         
         return df
+    
+    def modify_columns_order(self, df):
+        if '설명' in df.columns:
+            old_columns = list(df.columns)
+            old_columns.pop(old_columns.index('설명'))
+            new_columns = old_columns + ['설명']
+            df = df[new_columns]
         
+        return df
+    
+    def fit_width(self, excel_path):
+        # 열 너비 자동 조정
+        wb = load_workbook(excel_path)
+        ws = wb.active
+        
+        for col_idx, column_cells in enumerate(ws.columns, start=1):
+            column_letter = get_column_letter(col_idx)
+            
+            # 열 이름 길이 기준 초기값
+            header = ws.cell(row=1, column=col_idx).value
+            max_length = len(str(header))*1.5 if header else 0
+
+            if header in ['네이버지도', '네이버부동산']:
+                continue
+            
+            # 데이터 행 길이 비교
+            for cell in column_cells[1:]:  # 첫 번째는 헤더이므로 생략 가능
+                try:
+                    cell_value = str(cell.value)
+                    if cell_value is not None:
+                        max_length = max(max_length, len(cell_value)*1.5)
+                except:
+                    pass
+            
+            # 여유 공간 포함해서 설정
+            ws.column_dimensions[column_letter].width = max_length + 2
+
+        wb.save(excel_path)
+                
         
     def get_n_save_data(self, district_codes, save_dir=os.path.join(os.path.expanduser("~"), "Downloads", "LandScout")):
         for i, code in enumerate(district_codes):
             
             code_name = get_district_name(code)
-            print(f"[I] ({i+1}/{len(district_codes)}) {code_name} 작업 중...")
-            
+            self.print(0, f"[I] ({i+1}/{len(district_codes)}) {code_name} 작업 중...")
+            self.print(2, f"[I] {code_name} code is {code}.")
             
             # get basic data
             basic_data = self.get_basic_data(code)
@@ -322,7 +419,7 @@ class WebQueryClient(object):
                 continue
                 
             df = self.decode_to_dataframe(basic_data, detail_data)
-            print(f"[I] {code_name} 토지 검색 완료 (총 {len(basic_data)} 도출).")
+            print(f"[I] {code_name} 토지 검색 완료 (총 {len(df)} 도출).")
             
             # post processing
             if sum(self.kwargs.values()) > 0:
@@ -331,5 +428,11 @@ class WebQueryClient(object):
             if not os.path.isdir(save_dir):
                 os.makedirs(save_dir)
                 
-            df.to_csv(os.path.join(save_dir, f'{code_name}.csv'), index=False, encoding="utf-8-sig")
+            df = self.modify_columns_order(df)
+            
+            save_path = os.path.join(save_dir, f'{code_name}.xlsx')
+            df.to_excel(save_path, index=False)
+            
+            self.fit_width(save_path)
+            
             print(f"[I] {code_name} 저장 완료.")

@@ -2,13 +2,13 @@
 # ">" 표시는 수정 금지
 
 # 부동산 형태
-> rletTpCd
+> realEstateType
 # 아파트
 토지
 # 오피스텔
 
 # 거래 타입
-> tradTpCd
+> tradeType
 매매
 
 # 탐색 지역 (법정동명)
@@ -20,42 +20,42 @@
 # 강원특별자치도 화천군
 # 강원특별자치도 홍천군
 # 강원특별자치도 평창군
-# 경상북도 영주시
-충청북도 단양군
+경상북도 영주시
+# 충청북도 단양군
 # 경기도 이천시
 # 경기도 포천시
 # 경기도 여주시
 
 # 최소 가격 (만원)
-> dprcMin
+> PriceMin
 10000
 
 # 최대 가격 (만원)
-> dprcMax
+> PriceMax
 25000
 
 # 최소 면적 (m^2)
-> spcMin
+> areaMin
 660
 
 # 최대 면적 (m^2)
-> spcMax
+> areaMax
 1653
 
 
 # 추가 기능  (True or False)
 ## 주소
 > address
-True
+False
 ## 도착시간
 > ETA
-True
+False
 ## 네이버 부동산 링크
 > rlet_link
 True
 ## 네이버 지도 링크
 > map_link
-True
+False
 
 # 평형으로 면적을 선택할 때 참고용 코드 (무시 가능)
 # spcMin = []
