@@ -36,8 +36,14 @@ decode_key = {
             "financePrice":"융자금(만원)",
         },
         "articleDetail":{
+            "latitude":"위도2",
+            "longitude":"경도2",
             "currentUsage":"현재용도",
             "recommendUsage":"추천용도",
+        },
+        "articleAddition":{
+            "latitude":"위도3",
+            "longitude":"경도3",
         },
         "articleFacility":{
             "usageTypeName":"용도지역",

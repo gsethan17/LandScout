@@ -46,16 +46,16 @@
 # 추가 기능  (True or False)
 ## 주소
 > address
-False
+True
 ## 도착시간
 > ETA
-False
+True
 ## 네이버 부동산 링크
 > rlet_link
 True
 ## 네이버 지도 링크
 > map_link
-False
+True
 
 # 평형으로 면적을 선택할 때 참고용 코드 (무시 가능)
 # spcMin = []

@@ -182,20 +182,47 @@ class WebQueryClient(object):
         for i, basic_ in enumerate(basic_data):
             self.print(2, f"[I] Decode data [{i+1}/{len(basic_data)}]")
             values = [basic_[k] if k in basic_.keys() else None for k in self.decode_key["basic"].keys()]
+            cols = deepcopy(columns)
             
             for keys in detail_keys:
                 value = deepcopy(detail_data[i])
-                for key in keys:
+                
+                for key in keys[:-1]:
+                    value = deepcopy(value[key])
+                    
+                last_key = keys[-1]
+                if last_key in ["latitude", "longitude"]:
+                    basic_value = values[list(self.decode_key['basic'].keys()).index(last_key)]
+                    
+                    if (basic_value == '0') & (not value[last_key] == '0'):
+                        values[list(self.decode_key['basic'].keys()).index(last_key)] = value[last_key]
+                        self.print(2, f"[I] {last_key} update : {basic_value}->{value[last_key]}.")
+                        
+                    value = 'pass'
+                    
+                else:
                     try:
-                        value = value[key]
+                        value = value[last_key]
                     except:
                         value = '-'
+                        self.print(2, f"[I] There is no {last_key} information.")
                         
-                values += [value]
-            
-            for i, col in enumerate(columns):
+                if value == 'pass':
+                    cols.pop(len(values))
+                else:
+                    values += [value]
+                    
+            for i, col in enumerate(cols):
                 decode_dict[col].append(values[i])
         
+        # delete unused key
+        del_keys = []
+        for k, v in decode_dict.items():
+            if len(v) == 0:
+                del_keys.append(k)
+        for k in del_keys:
+            del decode_dict[k]
+                
         df = pd.DataFrame(decode_dict)
         
         return df
@@ -211,11 +238,11 @@ class WebQueryClient(object):
                     url,
                     headers=self.headers_post,
                     )
-        self.print(2, f"[I] Response: {response}.")
-        
+                
         
         # 응답 상태 코드 확인
         if response.status_code == 200:
+            self.print(2, f"[I] Response: {response}.")
             # JSON 데이터 파싱
             data_dic = response.json()
             if len(data_dic['results']) != 0:
@@ -234,6 +261,8 @@ class WebQueryClient(object):
                 num2 = data_dic['results'][0]['land']['number2']
                 if num2 != '':
                     add += '-' + num2
+                
+                self.print(2, f"[I] Get Address: {add}.")
                     
             else:
                 print(f"Failed to retrieve data: {response.status_code}, {response.text}")
@@ -247,13 +276,17 @@ class WebQueryClient(object):
         # orders = "roadaddr" # 도로명
         print(f"[I] 토지 주소 변환 중...")
         for i in tqdm(range(len(df))):
+            self.print(2, f"[I] Getting address [{i+1}/{len(df)}]")
             
             row = df.iloc[i]
-            lat = str(row['위도'])
-            lng = str(row['경도'])
+            lat = row['위도']
+            lng = row['경도']
             
-            add = self.request_address(lat, lng)
-            print(add)
+            if (lat==0) or (lng==0):
+                self.print(2, f"[I] There is no latitude & longitudinal data: ArticleNo={row['매물번호']}.")
+                add = '-'
+            else:
+                add = self.request_address(lat, lng)
             df.iloc[i, df.columns.get_loc("주소")] = add
         
         return df
