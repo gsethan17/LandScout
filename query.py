@@ -192,13 +192,20 @@ class WebQueryClient(object):
                     value = deepcopy(value[key])
                     
                 last_key = keys[-1]
+                
                 if last_key in ["latitude", "longitude"]:
-                    basic_value = values[list(self.decode_key['basic'].keys()).index(last_key)]
+                    try:
+                        value = value[last_key]
                     
-                    if (basic_value == '0') & (not value[last_key] == '0'):
-                        values[list(self.decode_key['basic'].keys()).index(last_key)] = value[last_key]
-                        self.print(2, f"[I] {last_key} update : {basic_value}->{value[last_key]}.")
+                        basic_value = values[list(self.decode_key['basic'].keys()).index(last_key)]
+                    
+                        if (basic_value == '0') & (not value[last_key] == '0'):
+                            values[list(self.decode_key['basic'].keys()).index(last_key)] = value[last_key]
+                            self.print(2, f"[I] {last_key} update : {basic_value}->{value[last_key]}.")
                         
+                    except:
+                        pass
+                    
                     value = 'pass'
                     
                 else:
@@ -282,8 +289,8 @@ class WebQueryClient(object):
             self.print(2, f"[I] Getting address [{i+1}/{len(df)}]")
             
             row = df.iloc[i]
-            lat = row['위도']
-            lng = row['경도']
+            lat = float(row['위도'])
+            lng = float(row['경도'])
             
             if (lat==0) or (lng==0):
                 self.print(2, f"[I] There is no latitude & longitudinal data: ArticleNo={row['매물번호']}.")
@@ -329,8 +336,8 @@ class WebQueryClient(object):
         
     def get_ETA(self, df, start="강남역"):
         if start == "강남역":
-            start_lat = '37.498716'
-            start_lng = '127.027021'
+            start_lat = 37.498716
+            start_lng = 127.027021
         else:
             raise NotImplementedError("[E] Starting points other than Gangnam Station are not implemented or provided.")
         
@@ -341,10 +348,14 @@ class WebQueryClient(object):
         for i in tqdm(range(len(df))):
             
             row = df.iloc[i]
-            lat = str(row['위도'])
-            lng = str(row['경도'])
+            lat = float(row['위도'])
+            lng = float(row['경도'])
             
-            eta_m, request_time = self.request_ETA(start_lat, start_lng, lat, lng)
+            if (lat==0) or (lng==0):
+                self.print(2, f"[I] There is no latitude & longitudinal data: ArticleNo={row['매물번호']}.")
+                eta_m, request_time = '-', '-'
+            else:
+                eta_m, request_time = self.request_ETA(start_lat, start_lng, lat, lng)
             
             df.iloc[i, df.columns.get_loc("소요시간(분)")] = eta_m
             df.iloc[i, df.columns.get_loc("소요시간 탐색 시각")] = request_time
