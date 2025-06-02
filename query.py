@@ -5,23 +5,18 @@ from tqdm import tqdm
 from copy import deepcopy
 from utils import get_district_name
 from utils import get_application_key
-
-from url_info import reverse_gc_url, driving_url
     
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
 class WebQueryClient(object):
     def __init__(self, 
-                base_url:str="", 
-                detail_url:str="", 
                 query_params:dict={}, 
                 decode_key:dict={}, 
                 verbose:int=0, 
                 **kwargs
                 ):
-        self.url = base_url
-        self.detail_url = detail_url
+        
         self.decode_key = decode_key
         self.query_params = {}
         for k, v in query_params.items():
@@ -88,7 +83,10 @@ class WebQueryClient(object):
         
     def get_basic_data(self, district_code):
         self.print(2, f"[I] Start with getting basic data.")
+        
+        basic_url = "https://new.land.naver.com/api/articles"
         total_data = []
+        
         self.print(2, f"[I] Define total_data: {total_data}.")
         
         params = {}
@@ -104,9 +102,9 @@ class WebQueryClient(object):
         continue_ = True
         
         while continue_:
-            self.print(2, f"[I] Start with request information from {self.url}.")
+            self.print(2, f"[I] Start with request information from {basic_url}.")
             response = requests.get(
-                url=self.url, 
+                url=basic_url, 
                 params=params, 
                 headers=self.headers,
                 )
@@ -135,12 +133,15 @@ class WebQueryClient(object):
     
     def get_detail_data(self, basic_data):
         self.print(2, f"[I] Start with getting detail data.")
+        
+        detail_url = "https://new.land.naver.com/api/articles"
         total_detail_data = []
+        
         self.print(2, f"[I] Define total_detail_data: {total_detail_data}.")
         
         for i, data in enumerate(basic_data):
             self.print(2, f"[I] Define url by article number. [{i+1}/{len(basic_data)}]")
-            url=f"{self.detail_url}/{data['articleNo']}"
+            url=f"{detail_url}/{data['articleNo']}"
             
             self.print(2, f"[I] Start with request information from {url}.")
             response = requests.get(
@@ -231,6 +232,8 @@ class WebQueryClient(object):
         self.print(2, f"[I] Start with getting address. [lat:{lat}, lon:{lng}]")
         add = ''
         orders = "addr"     # 지번
+        
+        reverse_gc_url = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc"
         url = f"{reverse_gc_url}?coords={lng},{lat}&output=json&orders={orders}"
         
         self.print(2, f"[I] Start with request information from {url}.")
@@ -299,6 +302,7 @@ class WebQueryClient(object):
             "option": "trafast",     # 빠른 경로를 위한 옵션
             # "option": "traoptimal",  # 최적 경로를 위한 옵션
         }
+        driving_url = "https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving"
         
         response = requests.get(
                     driving_url, 
