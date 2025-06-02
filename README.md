@@ -2,6 +2,9 @@
 Land searching for valuable space
 
 # Release Note
+[Jun. 3rd, 2025]  
+- Update GUI aspect.
+
 [Jun. 1st, 2025]  
  - Update Header Information for real estate request function.  
  - Modify parameter name for real estate request url.
@@ -13,5 +16,4 @@ Land searching for valuable space
  - Add function to supplement latitude & longitude when basic data has no information.
 
 # To Do List
-- Update GUI aspect.
 - 소요시간 탐색을 특정 시간 기준으로 예상 시간으로 변경.

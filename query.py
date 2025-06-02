@@ -3,23 +3,25 @@ import requests
 import pandas as pd
 from tqdm import tqdm
 from copy import deepcopy
-from utils import get_district_name
-from utils import get_application_key
+from utils import get_district_code
     
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
+from gui import SaveLocationApp, IDPWSecurityApp
+
 class WebQueryClient(object):
     def __init__(self, 
-                query_params:dict={}, 
+                params:dict={}, 
                 decode_key:dict={}, 
                 verbose:int=0, 
                 **kwargs
                 ):
         
         self.decode_key = decode_key
+        self.params = params
         self.query_params = {}
-        for k, v in query_params.items():
+        for k, v in self.params.items():
             if k == "cortarName":
                 continue
             if len(v) > 1:
@@ -71,10 +73,12 @@ class WebQueryClient(object):
             self.add_get_ETA or
             self.add_get_map_link
             ):
-            application_key = get_application_key()
+            app = IDPWSecurityApp()
+            app.root.mainloop()
+            
             self.headers_post = {
-                'X-NCP-APIGW-API-KEY-ID': application_key['client_id'],
-                'X-NCP-APIGW-API-KEY': application_key['client_secret'],
+                'X-NCP-APIGW-API-KEY-ID': app.user_id,
+                'X-NCP-APIGW-API-KEY': app.user_pw,
             }
             
     def print(self, level:int, info:str):
@@ -370,13 +374,15 @@ class WebQueryClient(object):
         for i in tqdm(range(len(df))):
             
             row = df.iloc[i]
-            add = str(row['주소']).split(" ")
-            url = map_url
-            for add in str(row['주소']).split(" "):
-                url += add + "%20"
+            if len(row['주소']) <= 1:
+                df.iloc[i, df.columns.get_loc("네이버지도")] = '-'
+            else:
+                url = map_url
+                for add in str(row['주소']).split(" "):
+                    url += add + "%20"
+                
+                df.iloc[i, df.columns.get_loc("네이버지도")] = f'=HYPERLINK("{url[:-3]}", "링크")'
             
-            df.iloc[i, df.columns.get_loc("네이버지도")] = f'=HYPERLINK("{url[:-3]}", "링크")'
-        
         return df
 
     def get_rlet_link(self, df):
@@ -447,11 +453,13 @@ class WebQueryClient(object):
         wb.save(excel_path)
                 
         
-    def get_n_save_data(self, district_codes, save_dir=os.path.join(os.path.expanduser("~"), "Downloads", "LandScout")):
-        for i, code in enumerate(district_codes):
+    def get_n_save_data(self, save_dir=os.path.join(os.path.expanduser("~"), "Downloads", "LandScout")):
+        for i, code_name in enumerate(self.params["cortarName"]):
             
-            code_name = get_district_name(code)
-            self.print(0, f"[I] ({i+1}/{len(district_codes)}) {code_name} 작업 중...")
+            code = get_district_code(code_name)
+            
+            # code_name = get_district_name(code)
+            self.print(0, f"[I] ({i+1}/{len(self.params['cortarName'])}) {code_name} 작업 중...")
             self.print(2, f"[I] {code_name} code is {code}.")
             
             # get basic data
@@ -478,7 +486,12 @@ class WebQueryClient(object):
                 
             df = self.modify_columns_order(df)
             
-            save_path = os.path.join(save_dir, f'{code_name}.xlsx')
+            
+            app = SaveLocationApp()
+            app.root.mainloop()
+            save_path = app.selected_file_path
+            
+            # save_path = os.path.join(save_dir, f'{code_name}.xlsx')
             df.to_excel(save_path, index=False)
             
             self.fit_width(save_path)

@@ -20,7 +20,7 @@ def get_district_code(name=None):
             if df.loc[i, df.columns[2]] == exist:
                 code.append(df.loc[i, df.columns[0]])
                 
-    return code
+    return int(code)
 
 def get_district_name(code):
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'config', 'statutory_administrative_district_code.txt'), sep='\t')
@@ -69,6 +69,37 @@ def check_district_code(params):
                 print("[I] 추가 기능 : {}".format(k))
     print("")
     return True, district_codes
+
+def get_district_dict():
+    
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'config', 'statutory_administrative_district_code.txt'), sep='\t')
+    
+    num_dong = df.법정동명.apply(lambda x: len(x.split(' '))).copy()
+    idx_is_exist = df[df['폐지여부'] == '존재'].index
+    
+    idx_dong_1level = num_dong[num_dong == 1].index
+    idx_dong_1level = idx_dong_1level.intersection(idx_is_exist)
+    dong_1level = df.법정동명[idx_dong_1level].to_list()
+    
+    district_dict = {k:{} for k in dong_1level}
+    
+    idx_dong_2level = num_dong[num_dong == 2].index
+    idx_dong_2level = idx_dong_2level.intersection(idx_is_exist)
+    for dong_1_2 in df.법정동명[idx_dong_2level].to_list():
+        dong1, dong2 = dong_1_2.split(' ')
+        
+        district_dict[dong1][dong2] = []
+    
+    
+    idx_dong_3level = num_dong[num_dong == 3].index
+    idx_dong_3level = idx_dong_3level.intersection(idx_is_exist)
+    for dong_1_2_3 in df.법정동명[idx_dong_3level].to_list():
+        dong1, dong2, dong3 = dong_1_2_3.split(' ')
+        
+        district_dict[dong1][dong2].append(dong3)
+        
+    return district_dict
+    
         
 
 import os

@@ -1,9 +1,0 @@
-# NAVER API application key 등록 필요
-# 아래 링크 참조
-# https://guide.ncloud-docs.com/docs/naveropenapiv3-application#application-%EB%93%B1%EB%A1%9D-%EB%B0%A9%EB%B2%95
-# 아래는 예시
-# client_id = ap8gorpopq
-# client_secret = 44NjXCrZUGKaRsX4HYq3Y2g9E1Lwc0koo82PxXxQ
-
-client_id = 
-client_secret = 

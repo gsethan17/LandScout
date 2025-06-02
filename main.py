@@ -1,29 +1,39 @@
-import os
+from copy import deepcopy
 
 from utils import terminate
-from utils import get_txt_config
-from utils import check_district_code
+from utils import get_district_dict
 
 from query import WebQueryClient
 from config_base import decode_key
 
+from gui import SearchConditionSelectionApp
+from gui import DistrictNOptionSelectionApp
+
 if __name__ == "__main__":
-    params = get_txt_config(os.path.join(os.path.dirname(__file__), 'config', 'config_user.txt'))
-    flag, district_codes = check_district_code(params)
-    if not flag:
-        raise ValueError("config.py 파일을 확인하세요.")
+    app1 = SearchConditionSelectionApp()
+    app1.root.mainloop()
+    params1 = deepcopy(app1.results)
     
+    district_dict = get_district_dict()
+    app2 = DistrictNOptionSelectionApp(district_dict=district_dict)
+    app2.root.mainloop()
+    params2 = deepcopy(app2.results)
+    
+    params = params1 | params2
+    
+    # raise BrokenPipeError()
+    if len(params) < 1:
+        raise BrokenPipeError()
+
     client = WebQueryClient(
-        query_params=params,
+        params=params,
         decode_key=decode_key,
         address=params['address'][0] == 'True',
         ETA=params['ETA'][0] == 'True', 
         rlet_link=params['rlet_link'][0] == 'True', 
         map_link=params['map_link'][0] == 'True', 
-        verbose=2,
+        verbose=0,
         )
     
-    client.get_n_save_data(district_codes=district_codes)
-    
-    terminate()
+    client.get_n_save_data()
     
